@@ -22,30 +22,46 @@ T = 0.025
 D = 1.0
 
 def solve(D):
-    u = numpy.zeros(N)
-    g = numpy.zeros((1, N))
+    M = T / t
+    u = numpy.zeros((M, N))
+    g = 0
+    dudD = numpy.zeros(N)
 
     t = 0.0
 
     while t < T:
         u = u + dt * D * (A.dot(u) + b) / dx**2
-        g[0] = g[0] + dt * ((A.dot(u) + b) / dx**2 + D * (A.dot(g[0])) / dx**2)
+
+        dudD = dudD + dt * ((A.dot(u) + b) / dx**2 + D * (A.dot(dudD)) / dx**2)
 
         t += dt
 
-    return u, g
+    #dfu = numpy.zeros(N)
+    #dfu[0] = 1.0
+
+    #dgu = -D * A / dx**2
+
+    #dgp = -(A.dot(u) + b) / dx**2
+
+    #lba = numpy.linalg.solve(dgu, -dfu)
+
+    #print -lba.dot(dgp)
+    #print dgu
+    #print dgp
+    #print dfu
+    #print '---'
+
+    return u, dudD
 
 u1, g = solve(1.0)
 u2, g = solve(1.0001)
 
 print (u2 - u1) / (1.0001 - 1.0)
-print g[0]
+print g
 #%%
 def solve2(D):
     u = numpy.zeros(N)
     g = numpy.zeros((1, N))
-
-    t = 0.0
 
     def func(y, t):
         u = y[:N]
@@ -74,6 +90,43 @@ def solve2(D):
 
 u1, g = solve2(1.0)
 u2, g = solve2(1.0001)
+
+print (u2 - u1) / (1.0001 - 1.0)
+print g
+#%%
+# This comes from Direct and adjoint sensitivity analysis ofchemical kinetic systems with KPP: Part I—theory and software tools
+# Adrian Sandua, Dacian N. Daescub, and Gregory R. Carmichaelc
+def solve(D):
+    M = int(T / dt)
+    u = numpy.zeros((M, N))
+    g = numpy.zeros(M)
+
+    for i in range(1, M):
+        dudt = D * (A.dot(u[i - 1]) + b) / dx**2
+
+        u[i] = u[i - 1] + dt * dudt
+
+        g[i] = g[i - 1] + dt * dudt[0]
+
+    l = numpy.zeros((M, N))
+
+    l[M - 1, 0] = 1.0
+
+    for i in range(M - 2, -1, -1):
+        l[i] = l[i + 1] + dt * D * A.dot(l[i + 1]) / dx**2
+
+    total = 0.0
+    for i in range(M):
+        dfdp = (A.dot(u[i]) + b) / dx**2
+
+        total += dt * dfdp.dot(l[i])
+
+    print total
+
+    return u, total
+
+u1, g = solve(1.0)
+u2, g = solve(1.0001)
 
 print (u2 - u1) / (1.0001 - 1.0)
 print g
