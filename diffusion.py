@@ -22,8 +22,7 @@ T = 0.025
 D = 1.0
 
 def solve(D):
-    M = T / t
-    u = numpy.zeros((M, N))
+    u = numpy.zeros(N)
     g = 0
     dudD = numpy.zeros(N)
 
@@ -31,6 +30,59 @@ def solve(D):
 
     while t < T:
         u = u + dt * D * (A.dot(u) + b) / dx**2
+
+        dudD = dudD + dt * ((A.dot(u) + b) / dx**2 + D * (A.dot(dudD)) / dx**2)
+
+        t += dt
+
+    #dfu = numpy.zeros(N)
+    #dfu[0] = 1.0
+
+    #dgu = -D * A / dx**2
+
+    #dgp = -(A.dot(u) + b) / dx**2
+
+    #lba = numpy.linalg.solve(dgu, -dfu)
+
+    #print -lba.dot(dgp)
+    #print dgu
+    #print dgp
+    #print dfu
+    #print '---'
+
+    return u, dudD
+
+u1, g = solve(1.0)
+u2, g = solve(1.0001)
+
+print (u2 - u1) / (1.0001 - 1.0)
+print g
+#%%
+def solve(D):
+    u = numpy.zeros(N)
+    g = 0
+    dudD = numpy.zeros(N)
+
+    t = 0.0
+
+    alpha = dt * D / dx**2
+
+    while t < T:
+        #ut = numpy.linalg.solve(numpy.eye(N) - alpha * A, u + alpha * b)
+
+        d = numpy.ones(N) * (1 + 2 * alpha)
+        bt = u + alpha * b
+
+        for i in range(N - 1):
+            f = alpha / d[i]
+            d[i + 1] -= alpha * f
+            bt[i + 1] += f * bt[i]
+
+        for i in range(N - 2, -1, -1):
+            g = alpha / d[i]
+            bt[i] += g * bt[i + 1]
+
+        u = bt / d
 
         dudD = dudD + dt * ((A.dot(u) + b) / dx**2 + D * (A.dot(dudD)) / dx**2)
 
