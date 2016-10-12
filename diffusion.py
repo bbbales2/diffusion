@@ -53,11 +53,17 @@ def solve2(D):
 
         dy = numpy.zeros(2 * N)
 
+        dy[0] = D * (b[0] - 2 * u[0] + u[1]) / dx**2
+        dy[N] = dy[0] / D + D * (-2 * g[0] + g[1]) / dx**2
+
         for i in range(1, N - 1):
             dy[i] = D * (u[i - 1] - 2 * u[i] + u[i + 1]) / dx**2
-            dy[N + i] = dy[i] / D
+            dy[N + i] = dy[i] / D + D * (g[i - 1] - 2 * g[i] + g[i + 1]) / dx**2
 
-        return numpy.concatenate([D * (A.dot(u) + b) / dx**2, ((A.dot(u) + b) / dx**2 + D * (A.dot(g)) / dx**2)])
+        dy[N - 1] = D * (u[N - 2] - 2 * u[N - 1]) / dx**2
+        dy[2 * N - 1] = dy[N - 1] / D + D * (g[N - 2] - 2 * g[N - 1]) / dx**2
+
+        return dy#numpy.concatenate([D * (A.dot(u) + b) / dx**2, ((A.dot(u) + b) / dx**2 + D * (A.dot(g)) / dx**2)])
 
     _, y = scipy.integrate.odeint(func, numpy.zeros(2 * N), [0.0, T])
 
