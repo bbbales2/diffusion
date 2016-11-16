@@ -17,7 +17,7 @@ b = numpy.zeros(10)
 b[0] = 1.0
 
 dt = 0.0001
-T = 0.025
+T = 1.0
 
 D = 1.0
 
@@ -57,9 +57,12 @@ u2, g = solve(1.0001)
 
 print (u2 - u1) / (1.0001 - 1.0)
 print g
+print u1
 #%%
+dt = 0.001
 def solve(D):
     u = numpy.zeros(N)
+    ut = numpy.zeros(N)
     g = 0
     dudD = numpy.zeros(N)
 
@@ -68,21 +71,31 @@ def solve(D):
     alpha = dt * D / dx**2
 
     while t < T:
-        #ut = numpy.linalg.solve(numpy.eye(N) - alpha * A, u + alpha * b)
+        ut = numpy.linalg.solve(numpy.eye(N) - alpha * A, u + alpha * b)
 
         d = numpy.ones(N) * (1 + 2 * alpha)
         bt = u + alpha * b
+        M = numpy.eye(N) - alpha * A
 
         for i in range(N - 1):
             f = alpha / d[i]
             d[i + 1] -= alpha * f
             bt[i + 1] += f * bt[i]
+            M[i + 1, :] += f * M[i]
+
+        #plt.imshow(M, interpolation = 'NONE')
+        #plt.show()
 
         for i in range(N - 2, -1, -1):
-            g = alpha / d[i]
+            g = alpha / d[i + 1]
             bt[i] += g * bt[i + 1]
+            M[i, :] += g * M[i + 1]
+
+        #plt.imshow(M, interpolation = 'NONE')
+        #plt.show()
 
         u = bt / d
+        #1/0
 
         dudD = dudD + dt * ((A.dot(u) + b) / dx**2 + D * (A.dot(dudD)) / dx**2)
 
@@ -103,10 +116,10 @@ def solve(D):
     #print dfu
     #print '---'
 
-    return u, dudD
+    return u, ut, dudD
 
-u1, g = solve(1.0)
-u2, g = solve(1.0001)
+u1, ut1, g = solve(1.0)
+u2, ut2, g = solve(1.0001)
 
 print (u2 - u1) / (1.0001 - 1.0)
 print g
@@ -145,6 +158,7 @@ u2, g = solve2(1.0001)
 
 print (u2 - u1) / (1.0001 - 1.0)
 print g
+print u1
 #%%
 # This comes from Direct and adjoint sensitivity analysis ofchemical kinetic systems with KPP: Part I—theory and software tools
 # Adrian Sandua, Dacian N. Daescub, and Gregory R. Carmichaelc
