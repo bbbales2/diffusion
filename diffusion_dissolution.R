@@ -34,11 +34,11 @@ times = seq(0, T, by = h)
 
 w_init = rep(0, N)
 (fout = inner_join(as_tibble(ode(y = w_init, times = times, func = func, parms = c(D, alpha))[,]) %>%
-                    gather(xi, w, 2:(N + 1)) %>%
-                    mutate(xi = as.integer(xi)) %>%
-                    mutate(unoise = w + rnorm(n(), sd = 0.01)),
-                  as_tibble(list(xi = 1:N, x = x[2:(N + 1)])),
-                  by = "xi"
+                     gather(xi, w, 2:(N + 1)) %>%
+                     mutate(xi = as.integer(xi)) %>%
+                     mutate(unoise = w + rnorm(n(), sd = 0.01)),
+                   as_tibble(list(xi = 1:N, x = x[2:(N + 1)])),
+                   by = "xi"
 )) %>% filter(time == T) %>%
   gather(name, w, c(w, unoise)) %>%
   ggplot(aes(x, w)) +
@@ -52,13 +52,15 @@ fit = stan("models/diffusion_disolution.stan",
                        w_init = w_init,
                        y = (fout %>% filter(time == 0.1))$unoise,
                        dx = dx),
-           chains = 1,
+           chains = 4,
            cores = 4,
-           iter = 1000)
+           iter = 2000)
 
 print(fit)
 
-mcmc_trace(extract(fit, c("D"), permute = FALSE))
+pairs(fit, pars = c("D", "alpha", "sigma"))
+
+mcmc_trace(as.array(fit), pars = c("D"))
 mcmc_pairs(extract(fit, c("D", "alpha", "sigma"), permute = FALSE))
 mcmc_combo(extract(fit, c("D", "alpha", "sigma"), permute = FALSE))
 
